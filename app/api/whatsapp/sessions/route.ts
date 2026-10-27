@@ -5,7 +5,6 @@ import { getSupabaseAdminClient } from "@/backend/database/supabase-config"
 import { randomUUID } from "crypto"
 import { getJWTSecret } from "@/lib/jwt"
 
-const JWT_SECRET = getJWTSecret()
 
 interface WhatsAppSession {
   id: string
@@ -30,7 +29,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7)
     let decoded: any
     try {
-      decoded = jwt.verify(token, JWT_SECRET) as any
+      decoded = jwt.verify(token, getJWTSecret()) as any
     } catch {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 })
     }
@@ -66,7 +65,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7)
     let decoded: any
     try {
-      decoded = jwt.verify(token, JWT_SECRET) as any
+      decoded = jwt.verify(token, getJWTSecret()) as any
     } catch {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 })
     }

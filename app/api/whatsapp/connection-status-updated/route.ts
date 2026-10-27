@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
-import { WhatsAppSessionService } from '@/backend/services/whatsapp-session-manager'
 
 export async function GET(request: NextRequest) {
   try {
+    const { WhatsAppSessionService } = await import('@/backend/services/whatsapp-session-manager')
     // Check authentication
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

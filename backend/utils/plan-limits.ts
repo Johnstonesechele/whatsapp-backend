@@ -4,7 +4,6 @@ import { getSupabaseAdminClient } from '@/backend/database/supabase-config'
 import jwt from 'jsonwebtoken'
 import { getJWTSecret } from "@/lib/jwt"
 
-const JWT_SECRET = getJWTSecret()
 
 /**
  * Check if company has reached their plan limits
@@ -184,7 +183,7 @@ export async function enforcePlanLimits(
     let decoded: any
 
     try {
-      decoded = jwt.verify(token, JWT_SECRET)
+      decoded = jwt.verify(token, getJWTSecret())
     } catch (jwtError) {
       return {
         allowed: false,

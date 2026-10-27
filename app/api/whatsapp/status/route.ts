@@ -4,7 +4,6 @@ import { getSupabaseAdminClient } from "@/backend/database/supabase-config"
 import jwt from "jsonwebtoken"
 import { getJWTSecret } from "@/lib/jwt"
 
-const JWT_SECRET = getJWTSecret()
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +15,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7)
     let decoded: any
     try {
-      decoded = jwt.verify(token, JWT_SECRET)
+      decoded = jwt.verify(token, getJWTSecret())
     } catch {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 })
     }

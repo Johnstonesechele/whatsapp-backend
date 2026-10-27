@@ -4,7 +4,6 @@ import { DatabaseUtils } from '@/backend/database/db-api'
 import jwt from 'jsonwebtoken'
 import { getJWTSecret } from "@/lib/jwt"
 
-const JWT_SECRET = getJWTSecret()
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.split(' ')[1]
     try {
-      jwt.verify(token, JWT_SECRET)
+      jwt.verify(token, getJWTSecret())
     } catch (error) {
       return NextResponse.json(
         { success: false, message: 'Invalid token' },
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split(' ')[1]
     try {
-      jwt.verify(token, JWT_SECRET)
+      jwt.verify(token, getJWTSecret())
     } catch (error) {
       return NextResponse.json(
         { success: false, message: 'Invalid token' },

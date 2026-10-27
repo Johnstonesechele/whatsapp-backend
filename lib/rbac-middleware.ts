@@ -7,7 +7,6 @@ import { getSupabaseAdminClient } from '@/backend/database/supabase-config'
 import { isSystemAdminRole, isCompanyAdminRole, normalizeRole } from './auth-utils'
 import { getJWTSecret } from "@/lib/jwt"
 
-const JWT_SECRET = getJWTSecret()
 
 // Role hierarchy for permission levels (higher number = more permissions)
 export const ROLE_LEVELS: Record<string, number> = {
@@ -220,7 +219,7 @@ export async function rbacMiddleware(
     }
     
     const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, getJWTSecret()) as any
     const userId = decoded.userId
     
     if (!userId) {

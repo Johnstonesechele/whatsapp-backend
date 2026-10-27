@@ -9,10 +9,9 @@
 
 import jwt from "jsonwebtoken"
 
-const JWT_SECRET = (() => {
+export function getJWTSecret(): string {
   const secret = process.env.JWT_SECRET
   if (!secret) {
-    // In production, this should throw. In dev, warn loudly.
     if (process.env.NODE_ENV === "production") {
       throw new Error(
         "CRITICAL: JWT_SECRET environment variable is not set. " +
@@ -25,17 +24,13 @@ const JWT_SECRET = (() => {
     return "dev-only-insecure-fallback-do-not-use-in-production"
   }
   return secret
-})()
-
-export function getJWTSecret(): string {
-  return JWT_SECRET
 }
 
 export function signToken(
   payload: Record<string, any>,
   options?: jwt.SignOptions
 ): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, getJWTSecret(), {
     expiresIn: "12h",
     ...options,
   })
@@ -43,7 +38,7 @@ export function signToken(
 
 export function verifyToken<T = any>(token: string): T | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as T
+    return jwt.verify(token, getJWTSecret()) as T
   } catch {
     return null
   }

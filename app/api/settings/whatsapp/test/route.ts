@@ -14,7 +14,6 @@ const getWhatsAppService = async () => {
   }
 }
 
-const JWT_SECRET = getJWTSecret()
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.split(' ')[1]
     let decoded: any
     try {
-      decoded = jwt.verify(token, JWT_SECRET)
+      decoded = jwt.verify(token, getJWTSecret())
     } catch (error) {
       return NextResponse.json(
         { success: false, message: 'Invalid token' },

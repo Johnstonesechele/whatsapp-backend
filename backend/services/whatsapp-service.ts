@@ -1,3 +1,4 @@
+import '@/lib/log-buffer'
 // WhatsApp Web.js service - Environment-aware implementation
 // This service is designed to work with whatsapp-web.js but avoids build issues in Next.js
 

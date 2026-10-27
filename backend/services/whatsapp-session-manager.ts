@@ -1,3 +1,4 @@
+import '@/lib/log-buffer'
 import { WhatsAppService } from '@/backend/services/whatsapp-service'
 import crypto from 'crypto'
 import { getJWTSecret } from "@/lib/jwt"

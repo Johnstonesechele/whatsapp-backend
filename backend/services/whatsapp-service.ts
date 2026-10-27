@@ -358,7 +358,8 @@ class WhatsAppWebService {
         puppeteer: {
           headless: true,
           executablePath: browserExecutablePath,
-          timeout: 60000, // 60 second timeout
+          timeout: 120000, // 120 second launch timeout (Render cold start)
+          protocolTimeout: 120000, // protocol timeout
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -1193,7 +1194,7 @@ class WhatsAppWebService {
         if (result.success) {
           // Wait for real QR code to be generated (up to 30 seconds with progress)
           let attempts = 0
-          const maxAttempts = 60
+          const maxAttempts = 150
           
           console.log('⏳ Waiting for real QR code generation...')
           while (attempts < maxAttempts) {

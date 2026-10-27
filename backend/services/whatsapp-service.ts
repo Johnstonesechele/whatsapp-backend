@@ -359,7 +359,7 @@ class WhatsAppWebService {
           headless: true,
           executablePath: browserExecutablePath,
           timeout: 120000, // 120 second launch timeout (Render cold start)
-          protocolTimeout: 120000, // protocol timeout
+          protocolTimeout: 300000, // 5 min protocol timeout
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -377,6 +377,9 @@ class WhatsAppWebService {
             '--disable-extensions',
             '--allow-running-insecure-content',
             '--disable-features=TranslateUI',
+            '--single-process',
+            '--no-zygote',
+            '--disable-ipc-flooding-protection',
             '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
           ]
         }

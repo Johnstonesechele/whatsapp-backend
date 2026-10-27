@@ -397,7 +397,8 @@ class WhatsAppWebService {
         pageReadyPromise,
         createdAt: Date.now(),
         userId: userId || null,      //  Store userId for ready event
-        companyId: companyId || null //  Store companyId for ready event
+        companyId: companyId || null, //  Store companyId for ready event
+        error: null
       })
       
       console.log(` Session ${sessionId} initialized with user context:`, {
@@ -815,7 +816,10 @@ class WhatsAppWebService {
       // Initialize the client
       console.log(` Initializing WhatsApp client for session ${sessionId}`)
       client.initialize().catch((err: any) => {
-        console.error(`WhatsApp client.initialize failed for ${sessionId}:`, err && err.message ? err.message : err)
+        const msg = err && err.message ? err.message : String(err)
+        console.error(`WhatsApp client.initialize failed for ${sessionId}:`, msg)
+        const s = this.sessions.get(sessionId)
+        if (s) { s.status = 'error'; s.error = msg; this.sessions.set(sessionId, s) }
       })
       client.on('auth_failure', (msg: any) => console.error(`Auth failure for ${sessionId}:`, msg))
       client.on('disconnected', (reason: any) => console.warn(`Disconnected ${sessionId}:`, reason))
@@ -1211,8 +1215,9 @@ class WhatsAppWebService {
             }
             
             // Check if session failed
-            if (session && (session.status === 'auth_failed' || session.status === 'disconnected')) {
-              console.log(' Session failed:', session.status)
+            if (session && (session.status === 'auth_failed' || session.status === 'disconnected' || session.status === 'error')) {
+              console.log(' Session failed:', session.status, session.error)
+              if (session.error) fallbackReason = session.error
               break
             }
             

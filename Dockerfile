@@ -1,6 +1,7 @@
 FROM node:22
 # System libraries required by Chromium (used by puppeteer/whatsapp-web.js)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  chromium \
   ca-certificates fonts-liberation libappindicator3-1 libasound2 libatk-bridge2.0-0 \
   libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 \
   libgbm1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 \

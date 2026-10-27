@@ -324,8 +324,15 @@ class WhatsAppWebService {
       }
       this.pendingCreations.add(sessionId)
       
-      // Get the browser executable path from puppeteer
-      const browserExecutablePath = puppeteer.executablePath()
+      // Get the browser executable path from puppeteer (or system chromium)
+      let browserExecutablePath = puppeteer.executablePath()
+      const fsSync = require('fs')
+      const candidates = ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome', '/usr/bin/chromium-shell']
+      for (const c of candidates) {
+        try {
+          if (fsSync.existsSync(c)) { browserExecutablePath = c; break }
+        } catch {}
+      }
       console.log(`Using browser at: ${browserExecutablePath}`)
       
       // Create a new client with session-specific authentication
@@ -807,7 +814,11 @@ class WhatsAppWebService {
 
       // Initialize the client
       console.log(` Initializing WhatsApp client for session ${sessionId}`)
-      client.initialize()
+      client.initialize().catch((err: any) => {
+        console.error(`WhatsApp client.initialize failed for ${sessionId}:`, err && err.message ? err.message : err)
+      })
+      client.on('auth_failure', (msg: any) => console.error(`Auth failure for ${sessionId}:`, msg))
+      client.on('disconnected', (reason: any) => console.warn(`Disconnected ${sessionId}:`, reason))
 
       // Mark creation complete (pendingCreations entry is removed once sessions Map has the entry)
       this.pendingCreations.delete(sessionId)

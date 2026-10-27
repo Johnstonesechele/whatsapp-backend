@@ -412,16 +412,21 @@ class WhatsAppWebService {
       // Listen for QR code generation
       client.on('qr', async (qr: string) => {
         console.log(`QR code generated for session ${sessionId}`)
-        
-        // Generate QR code as data URL
-        qrCodeData = await QRCode.toDataURL(qr, {
-          width: 256,
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        })
+        try {
+          qrCodeData = await QRCode.toDataURL(qr, {
+            width: 256,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          })
+        } catch (e: any) {
+          console.error(`QR toDataURL failed for ${sessionId}:`, e && e.message ? e.message : e)
+          const s = this.sessions.get(sessionId)
+          if (s) { s.status = 'error'; s.error = 'QR encode failed: ' + (e && e.message ? e.message : e); this.sessions.set(sessionId, s) }
+          return
+        }
 
         // Update session with QR code and resolve page ready promise
         const session = this.sessions.get(sessionId)
@@ -433,6 +438,10 @@ class WhatsAppWebService {
         // Signal that the page is loaded
         pageReadyResolve?.()
         pageReadyResolve = null
+      })
+
+      client.on('loading_screen', (percent: any, message: any) => {
+        console.log(`Loading screen for ${sessionId}: ${percent}% ${message}`)
       })
 
       // Listen for pairing code (phone number login)
@@ -1183,7 +1192,7 @@ class WhatsAppWebService {
         if (result.success) {
           // Wait for real QR code to be generated (up to 30 seconds with progress)
           let attempts = 0
-          const maxAttempts = 30
+          const maxAttempts = 60
           
           console.log('⏳ Waiting for real QR code generation...')
           while (attempts < maxAttempts) {

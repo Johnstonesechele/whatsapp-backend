@@ -12,7 +12,7 @@ services:
       - key: WHATSAPP_SESSION_PATH
         value: "/app/.wwebjs_auth"
       - key: ALLOWED_ORIGIN
-        value: "https://union-jbve.onrender.com"
+        value: "https://union-sales-accelaration-platform.vercel.app"
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
@@ -20,7 +20,7 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: NEXT_PUBLIC_WHATSAPP_API_URL
-        value: "https://union-whatsapp-backend.onrender.com"
+        value: "https://whatsapp-backend-uij1.onrender.com"
     disks:
       - name: whatsapp-sessions
         mountPath: /app/.wwebjs_auth

@@ -1,0 +1,6 @@
+node_modules/
+.next/
+.wwebjs_auth/
+.env
+.env.local
+.env*.local

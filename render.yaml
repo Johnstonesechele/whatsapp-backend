@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: union-whatsapp-backend
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_WHATSAPP
+        value: "true"
+      - key: WHATSAPP_SESSION_PATH
+        value: "/app/.wwebjs_auth"
+      - key: ALLOWED_ORIGIN
+        value: "https://union-jbve.onrender.com"
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_WHATSAPP_API_URL
+        value: "https://union-whatsapp-backend.onrender.com"
+    disks:
+      - name: whatsapp-sessions
+        mountPath: /app/.wwebjs_auth
+        sizeGB: 1
+    healthCheckPath: /api/whatsapp/health

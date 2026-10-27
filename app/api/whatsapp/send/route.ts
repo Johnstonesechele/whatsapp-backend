@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseAdminClient } from "@/backend/database/supabase-config"
 import jwt from "jsonwebtoken"

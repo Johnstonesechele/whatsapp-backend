@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { type NextRequest, NextResponse } from "next/server"
 import { WhatsAppMenuAPI } from "@/backend/api/whatsapp-menu"
 import { WhatsAppAPI } from "@/backend/api/whatsapp"

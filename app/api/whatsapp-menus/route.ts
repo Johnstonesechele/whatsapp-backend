@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { DatabaseUtils } from '@/backend/database/db-api'
 import jwt from 'jsonwebtoken'

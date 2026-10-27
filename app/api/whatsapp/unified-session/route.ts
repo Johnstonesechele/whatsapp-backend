@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { UnifiedWhatsAppService } from '@/backend/services/unified-whatsapp-service'

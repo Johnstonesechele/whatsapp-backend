@@ -333,6 +333,15 @@ class WhatsAppWebService {
       const sessionDataPath = process.env.WHATSAPP_SESSION_PATH || 
         (process.env.NODE_ENV === 'production' ? '/app/.wwebjs_auth' : '.wwebjs_auth')
 
+      // Ensure the parent directory exists (Render disk mount may be empty
+      // and LocalAuth only mkdirs the session subdir, not the parent).
+      try {
+        const fs = require('fs')
+        fs.mkdirSync(sessionDataPath, { recursive: true })
+      } catch (e) {
+        console.warn('Could not ensure session data path:', e)
+      }
+
       const client = new Client({
         authStrategy: new LocalAuth({
           clientId: sessionId,
@@ -738,8 +747,17 @@ class WhatsAppWebService {
             try {
               const fs = await import('fs/promises')
               const path = await import('path')
-              const sessionDataPath = process.env.WHATSAPP_SESSION_PATH ||
+              const sessionDataPath = process.env.WHATSAPP_SESSION_PATH || 
                 (process.env.NODE_ENV === 'production' ? '/app/.wwebjs_auth' : '.wwebjs_auth')
+
+              // Ensure the parent directory exists (Render disk mount may be empty
+              // and LocalAuth only mkdirs the session subdir, not the parent).
+              try {
+                const fs = require('fs')
+                fs.mkdirSync(sessionDataPath, { recursive: true })
+              } catch (e) {
+                console.warn('Could not ensure session data path:', e)
+              }
               const authPath = path.join(sessionDataPath, 'session-' + sessionId)
               await fs.rm(authPath, { recursive: true, force: true })
               console.log(`Auth files removed for session ${sessionId}`)
@@ -1525,8 +1543,17 @@ class WhatsAppWebService {
       const path = await import('path')
 
       // WhatsApp Web.js stores sessions in .wwebjs_auth directory
-      const sessionDataPath = process.env.WHATSAPP_SESSION_PATH ||
+      const sessionDataPath = process.env.WHATSAPP_SESSION_PATH || 
         (process.env.NODE_ENV === 'production' ? '/app/.wwebjs_auth' : '.wwebjs_auth')
+
+      // Ensure the parent directory exists (Render disk mount may be empty
+      // and LocalAuth only mkdirs the session subdir, not the parent).
+      try {
+        const fs = require('fs')
+        fs.mkdirSync(sessionDataPath, { recursive: true })
+      } catch (e) {
+        console.warn('Could not ensure session data path:', e)
+      }
       const sessionPath = path.join(sessionDataPath, `session-${sessionId}`)
 
       if (fs.existsSync(sessionPath)) {

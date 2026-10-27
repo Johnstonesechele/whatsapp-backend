@@ -6,6 +6,7 @@ COPY . .
 ENV NODE_ENV=production
 ENV ENABLE_WHATSAPP=true
 ENV WHATSAPP_SESSION_PATH=/app/.wwebjs_auth
+RUN npm run build
 RUN mkdir -p /app/.wwebjs_auth
-EXPOSE 3001
+EXPOSE 10000
 CMD ["npm", "start"]

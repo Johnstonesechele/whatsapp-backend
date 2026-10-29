@@ -127,7 +127,43 @@ export async function GET(request: NextRequest) {
     // Use the service status probe rather than the raw session map. The probe
     // checks the live WhatsApp client and promotes authenticated clients to
     // ready, including persisting that state to Supabase.
-    const sessionStatus = await whatsappWebService.getSessionStatus(sessionId)
+    let sessionStatus = await whatsappWebService.getSessionStatus(sessionId)
+
+    // The session id stored in Supabase can be older than the live client
+    // after a reconnect or a duplicate QR attempt. In that case the requested
+    // session may still report "connecting" even though another client for
+    // this company is already ready. Use the live company session as the
+    // authoritative result.
+    if (sessionStatus.status !== 'ready' && userInfo.company_id) {
+      const liveSessions: Map<string, any> = (whatsappWebService as any).sessions
+      if (liveSessions) {
+        for (const [liveSessionId, liveSession] of liveSessions.entries()) {
+          if (liveSession.companyId !== userInfo.company_id || liveSession.status !== 'ready') {
+            continue
+          }
+
+          const liveStatus = await whatsappWebService.getSessionStatus(liveSessionId)
+          if (liveStatus.status === 'ready' || liveStatus.connected === true) {
+            sessionId = liveSessionId
+            sessionStatus = liveStatus
+
+            const supabase = getSupabaseAdminClient()
+            const now = new Date().toISOString()
+            await supabase
+              .from('whatsapp_settings')
+              .update({
+                connection_status: 'ready',
+                session_id: liveSessionId,
+                phone_number: liveStatus.phoneNumber || dbStatus?.phone_number,
+                last_connected: now,
+                updated_at: now
+              })
+              .eq('company_id', userInfo.company_id)
+            break
+          }
+        }
+      }
+    }
     
     console.log(` Session ${sessionId} status:`, sessionStatus.status)
     console.log(` Database status:`, dbStatus?.connection_status)

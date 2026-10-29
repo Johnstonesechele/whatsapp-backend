@@ -126,6 +126,18 @@ export async function POST(request: NextRequest) {
       
       //  Pass sessionId, userId, and companyId to generateQRCode
       const result = await WhatsAppService.generateQRCode(cleanPhoneNumber, sessionId, userId, companyId)
+
+      if (result.error || result.mock || result.fallback || !result.qrCode) {
+        console.error(' Real QR generation failed:', result.message)
+        return NextResponse.json(
+          {
+            success: false,
+            code: 'whatsapp_qr_unavailable',
+            error: result.message || 'WhatsApp Web did not generate a real QR code.'
+          },
+          { status: 504 }
+        )
+      }
       
       // Update session status
       whatsappSessionManager.updateSessionStatus(sessionId, 'qr_generated')
@@ -153,48 +165,14 @@ export async function POST(request: NextRequest) {
       })
     } catch (error) {
       console.error(' WhatsApp service error:', error)
-      
-      // Check if this is an environment issue
-      if (error instanceof Error && error.message.includes('browser/build environment')) {
-        // Generate a simple mock QR code as fallback
-        const mockQRCode = `data:image/svg+xml;base64,${Buffer.from(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-            <rect width="200" height="200" fill="white"/>
-            <rect x="20" y="20" width="160" height="160" fill="none" stroke="black" stroke-width="2"/>
-            <text x="100" y="110" text-anchor="middle" font-size="16" fill="black">WhatsApp QR</text>
-            <text x="100" y="130" text-anchor="middle" font-size="12" fill="gray">Environment Error</text>
-            <text x="100" y="150" text-anchor="middle" font-size="10" fill="gray">Mock QR Code</text>
-          </svg>
-        `).toString('base64')}`
-        
-        return NextResponse.json({
-          success: true,
-          sessionId: sessionId,
-          qrCode: mockQRCode,
-          mock: true,
-          environmentError: true,
-          message: 'WhatsApp service not available in this environment. Showing mock QR code for demonstration.'
-        })
-      }
-      
-      // For other errors, still try to provide a mock QR code
-      const errorQRCode = `data:image/svg+xml;base64,${Buffer.from(`
-        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-          <rect width="200" height="200" fill="white"/>
-          <text x="100" y="100" text-anchor="middle" font-size="14" fill="red">QR Generation Failed</text>
-          <text x="100" y="120" text-anchor="middle" font-size="12" fill="gray">Mock QR Code</text>
-          <text x="100" y="140" text-anchor="middle" font-size="10" fill="gray">Please try again</text>
-        </svg>
-      `).toString('base64')}`
-      
-      return NextResponse.json({
-        success: true, // Still return success with mock QR
-        sessionId: sessionId,
-        qrCode: errorQRCode,
-        mock: true,
-        error: true,
-        message: `QR code generation failed: ${error instanceof Error ? error.message : 'Unknown error'}. Showing mock QR code.`
-      })
+      return NextResponse.json(
+        {
+          success: false,
+          code: 'whatsapp_qr_unavailable',
+          error: `QR code generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        },
+        { status: 504 }
+      )
     }
     
   } catch (error) {

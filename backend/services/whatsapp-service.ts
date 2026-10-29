@@ -5,7 +5,7 @@ import '@/lib/log-buffer'
 // Interface for QR code generation results
 interface QRCodeResult {
   sessionId: string;
-  qrCode: string;
+  qrCode?: string;
   real?: boolean;
   mock?: boolean;
   fallback?: boolean;
@@ -1280,7 +1280,12 @@ class WhatsAppWebService {
         console.error(' WhatsApp dependencies failed to load:', fallbackReason)
       }
       
-      // Fallback to mock QR code with helpful information
+      throw new Error(
+        fallbackReason || 'WhatsApp Web did not produce a real QR code before the timeout.'
+      )
+
+      // Fallback QR generation is intentionally unreachable. A fake QR code
+      // cannot authenticate a phone and must never be reported as success.
       console.log(' Generating enhanced mock QR code', { reason: fallbackReason })
       const sanitizedPhone = phoneNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-10)
       //  FIX: Use the provided session ID so the frontend's polling session matches
@@ -1400,7 +1405,9 @@ class WhatsAppWebService {
     } catch (error) {
       console.error('Error in generateQRCode:', error)
       
-      // Always provide a fallback QR code
+      const message = error instanceof Error ? error.message : String(error)
+      // Never return a fake QR code as success. The caller must receive the
+      // actual failure so it can stop polling and offer a retry.
       const sanitizedPhone = phoneNumber ? phoneNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-10) : 'unknown'
       //  FIX: Use provided session ID so frontend polling works even on error
       const sessionId = providedSessionId || `fallback_session_${sanitizedPhone}_${Date.now()}`
@@ -1418,14 +1425,14 @@ class WhatsAppWebService {
       
       return {
         sessionId,
-        qrCode: errorQRCode,
+        qrCode: undefined,
         real: false,
         mock: false,
         fallback: true,
         error: true,
         expiresIn: 60, // 1 minute
         expiresAt: Date.now() + (60 * 1000),
-        message: `QR code generation failed: ${error instanceof Error ? error.message : String(error)}`
+        message: `QR code generation failed: ${message}`
       }
     }
   }

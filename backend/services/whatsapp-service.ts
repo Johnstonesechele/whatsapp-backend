@@ -1877,6 +1877,15 @@ Your phone is now linked to Union — Sales Acceleration Platform.
       }
       
       console.log(` Frontend notification database update complete for company ${companyId}: status=ready, phone=${phoneNumber}`)
+
+      const { publishWhatsAppConnection } = await import('./whatsapp-events')
+      publishWhatsAppConnection({
+        userId: userId || '',
+        companyId: companyId || '',
+        sessionId,
+        phoneNumber
+      })
+      console.log(` Frontend connection event published for company ${companyId}`)
       
     } catch (error) {
       console.error(' Error notifying frontend of connection:', error)

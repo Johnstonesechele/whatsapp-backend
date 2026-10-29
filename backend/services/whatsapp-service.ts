@@ -367,7 +367,6 @@ class WhatsAppWebService {
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--disable-gpu',
-            '--disable-web-security',
             '--disable-features=VizDisplayCompositor',
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
@@ -375,12 +374,8 @@ class WhatsAppWebService {
             '--no-default-browser-check',
             '--disable-default-apps',
             '--disable-extensions',
-            '--allow-running-insecure-content',
             '--disable-features=TranslateUI',
-            '--single-process',
-            '--no-zygote',
-            '--disable-ipc-flooding-protection',
-            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+            '--disable-ipc-flooding-protection'
           ]
         }
       })
@@ -836,8 +831,21 @@ class WhatsAppWebService {
         const s = this.sessions.get(sessionId)
         if (s) { s.status = 'error'; s.error = msg; this.sessions.set(sessionId, s) }
       })
-      client.on('auth_failure', (msg: any) => console.error(`Auth failure for ${sessionId}:`, msg))
-      client.on('disconnected', (reason: any) => console.warn(`Disconnected ${sessionId}:`, reason))
+      client.on('auth_failure', async (msg: any) => {
+        const reason = msg instanceof Error ? msg.message : String(msg)
+        console.error(`Auth failure for ${sessionId}:`, reason)
+        const session = this.sessions.get(sessionId)
+        if (session) {
+          session.status = 'auth_failed'
+          session.error = reason
+          this.sessions.set(sessionId, session)
+        }
+        await this.updateDatabaseStatus(sessionId, 'auth_failed').catch(() => {})
+      })
+      client.on('disconnected', async (reason: any) => {
+        console.warn(`Disconnected ${sessionId}:`, reason)
+        await this.updateDatabaseStatus(sessionId, 'disconnected').catch(() => {})
+      })
 
       // Mark creation complete (pendingCreations entry is removed once sessions Map has the entry)
       this.pendingCreations.delete(sessionId)

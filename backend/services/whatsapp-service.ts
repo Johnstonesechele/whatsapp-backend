@@ -843,6 +843,20 @@ class WhatsAppWebService {
       // Store the client
       this.clients.set(sessionId, client)
 
+      // Register the error listener before initialize() so an early browser or
+      // protocol error is recorded instead of leaving the session initializing.
+      client.on('error', (error: any) => {
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(`WhatsApp client error for ${sessionId}:`, message)
+        const session = this.sessions.get(sessionId)
+        if (session && ['initializing', 'connecting', 'qr_ready'].includes(session.status)) {
+          session.status = 'error'
+          session.error = message
+          this.sessions.set(sessionId, session)
+          void this.updateDatabaseStatus(sessionId, 'error').catch(() => {})
+        }
+      })
+
       // Initialize the client
       console.log(` Initializing WhatsApp client for session ${sessionId}`)
       client.initialize()
@@ -887,10 +901,6 @@ class WhatsAppWebService {
       client.on('change_state', (state: any) => {
         console.log(`WhatsApp state changed for ${sessionId}:`, state)
       })
-      client.on('error', (error: any) => {
-        console.error(`WhatsApp client error for ${sessionId}:`, error instanceof Error ? error.message : error)
-      })
-
       return {
         success: true,
         sessionId,
@@ -1162,7 +1172,17 @@ class WhatsAppWebService {
       // Strip any non-numeric characters from phone number
       const cleanNumber = phoneNumber.replace(/\D/g, '')
 
-      const code = await client.requestPairingCode(cleanNumber)
+      let codeTimeoutId: ReturnType<typeof setTimeout> | undefined
+      let code: string
+      try {
+        const codePromise = client.requestPairingCode(cleanNumber)
+        const codeTimeout = new Promise<never>((_, reject) => {
+          codeTimeoutId = setTimeout(() => reject(new Error('WhatsApp did not return a pairing code within 60 seconds. Please try again.')), 60000)
+        })
+        code = await Promise.race([codePromise, codeTimeout])
+      } finally {
+        if (codeTimeoutId) clearTimeout(codeTimeoutId)
+      }
 
       session.pairingCode = code
       session.status = 'pairing_code_ready'
@@ -1177,6 +1197,7 @@ class WhatsAppWebService {
         session.status = 'error'
         session.error = message
         this.sessions.set(sessionId, session)
+        void this.updateDatabaseStatus(sessionId, 'error').catch(() => {})
       }
       return {
         success: false,

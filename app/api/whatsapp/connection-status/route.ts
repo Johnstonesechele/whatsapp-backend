@@ -124,7 +124,10 @@ export async function GET(request: NextRequest) {
     
     // Get session status from WhatsApp service
     const whatsappWebService = await getWhatsAppService()
-    const sessionStatus = whatsappWebService.getSession(sessionId)
+    // Use the service status probe rather than the raw session map. The probe
+    // checks the live WhatsApp client and promotes authenticated clients to
+    // ready, including persisting that state to Supabase.
+    const sessionStatus = await whatsappWebService.getSessionStatus(sessionId)
     
     console.log(` Session ${sessionId} status:`, sessionStatus.status)
     console.log(` Database status:`, dbStatus?.connection_status)
@@ -161,6 +164,7 @@ export async function GET(request: NextRequest) {
       : (dbStatus?.connection_status || sessionStatus.status)
 
     const connected = effectiveStatus === 'ready' ||
+      sessionStatus.connected === true ||
       sessionStatus.status === 'ready' ||
       dbStatus?.connection_status === 'ready'
 

@@ -848,13 +848,8 @@ class WhatsAppWebService {
       client.on('error', (error: any) => {
         const message = error instanceof Error ? error.message : String(error)
         console.error(`WhatsApp client error for ${sessionId}:`, message)
-        const session = this.sessions.get(sessionId)
-        if (session && ['initializing', 'connecting', 'qr_ready'].includes(session.status)) {
-          session.status = 'error'
-          session.error = message
-          this.sessions.set(sessionId, session)
-          void this.updateDatabaseStatus(sessionId, 'error').catch(() => {})
-        }
+        // The generic client error event may be recoverable. Keep it visible
+        // in logs without preventing QR or pairing events from arriving.
       })
 
       // Initialize the client

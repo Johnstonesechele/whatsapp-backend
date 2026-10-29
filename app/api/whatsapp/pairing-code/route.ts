@@ -6,6 +6,7 @@ import { getJWTSecret } from "@/lib/jwt"
 
 export async function POST(request: NextRequest) {
   try {
+    console.info('[WhatsApp] pairing-code endpoint hit')
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     // Generate a new session ID
     const sessionId = `whatsapp_${userId}_${Date.now()}`
+    console.info('[WhatsApp] pairing-code request received', { sessionId })
 
     // Register session
     whatsappSessionManager.registerSession(userId, companyId, sessionId, cleanPhoneNumber)

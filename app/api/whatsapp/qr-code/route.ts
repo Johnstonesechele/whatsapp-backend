@@ -6,6 +6,7 @@ import { getJWTSecret } from "@/lib/jwt"
 
 export async function POST(request: NextRequest) {
   try {
+    console.info('[WhatsApp] QR-code endpoint hit')
     // Check authentication
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

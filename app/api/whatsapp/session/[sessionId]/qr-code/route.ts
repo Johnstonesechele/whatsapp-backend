@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
+import { getJWTSecret } from "@/lib/jwt"
+import { WhatsAppService } from "@/backend/services/whatsapp-service"
 
 interface WhatsAppSession {
   id: string
@@ -24,12 +26,7 @@ export async function GET(
     }
 
     const token = authHeader.substring(7)
-    const jwtSecret = process.env.JWT_SECRET
-    if (!jwtSecret) {
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
-    }
-    
-    const decoded = jwt.verify(token, jwtSecret) as any
+    const decoded = jwt.verify(token, getJWTSecret()) as any
     const { sessionId } = resolvedParams
 
     if (!sessionId) {
@@ -41,14 +38,9 @@ export async function GET(
       return NextResponse.json({ error: "Invalid session ID format" }, { status: 400 })
     }
 
-    const session = sessions.get(sessionId)
-    if (!session) {
+    const session = WhatsAppService.getSession(sessionId)
+    if (session.status === 'not_found' || session.status === 'unavailable') {
       return NextResponse.json({ error: "Session not found" }, { status: 404 })
-    }
-
-    // Generate a mock QR code for demonstration
-    if (session.status === 'connecting' && !session.qrCode) {
-      session.qrCode = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="white"/><text x="50%" y="50%" text-anchor="middle" dy=".3em">QR Code for ${sessionId}</text></svg>`
     }
 
     return NextResponse.json({

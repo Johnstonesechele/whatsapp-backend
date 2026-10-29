@@ -124,44 +124,34 @@ export async function POST(request: NextRequest) {
         throw new Error('WhatsApp service not available in this environment')
       }
       
-      //  Pass sessionId, userId, and companyId to generateQRCode
-      const result = await WhatsAppService.generateQRCode(cleanPhoneNumber, sessionId, userId, companyId)
-
-      if (result.error || result.mock || result.fallback || !result.qrCode) {
-        console.error(' Real QR generation failed:', result.message)
+      // Start the browser session without holding this request open while
+      // Chromium loads WhatsApp Web. The real QR is returned by the
+      // session-specific polling endpoint once the qr event fires.
+      const result = await WhatsAppService.createSession(sessionId, userId, companyId)
+      if (!result.success) {
         return NextResponse.json(
-          {
-            success: false,
-            code: 'whatsapp_qr_unavailable',
-            error: result.message || 'WhatsApp Web did not generate a real QR code.'
-          },
-          { status: 504 }
+          { success: false, code: 'whatsapp_session_unavailable', error: result.error },
+          { status: 503 }
         )
       }
-      
+
       // Update session status
       whatsappSessionManager.updateSessionStatus(sessionId, 'qr_generated')
-      
+
       console.log(' QR Code result:', {
-        sessionId: result.sessionId || sessionId,
-        hasQrCode: !!result.qrCode,
-        isMock: result.mock || result.fallback || result.error,
-        message: result.message
+        sessionId,
+        hasQrCode: false,
+        message: 'Session started; waiting for the real QR event'
       })
 
       return NextResponse.json({
         success: true,
-        sessionId: result.sessionId || sessionId,
-        qrCode: result.qrCode,
-        expiresIn: result.real ? 120000 : 300000, // Real QR expires in 2 min, mock in 5 min
-        real: result.real || false,
-        mock: result.mock || false,
-        error: result.error || false,
-        message: result.message || (
-          result.real ? 'Real WhatsApp QR code generated! Scan with WhatsApp mobile app.' :
-          result.mock ? 'Mock QR code generated for development/demo purposes.' : 
-          'QR code generated successfully'
-        )
+        sessionId,
+        qrCode: null,
+        status: 'connecting',
+        real: false,
+        mock: false,
+        message: 'WhatsApp Web is loading. Waiting for a real QR code.'
       })
     } catch (error) {
       console.error(' WhatsApp service error:', error)

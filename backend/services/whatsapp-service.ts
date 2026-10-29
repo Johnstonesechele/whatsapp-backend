@@ -442,6 +442,12 @@ class WhatsAppWebService {
 
       client.on('loading_screen', (percent: any, message: any) => {
         console.log(`Loading screen for ${sessionId}: ${percent}% ${message}`)
+        // Pairing-code login does not have to emit a QR event. Loading at
+        // 100% is the equivalent signal that requestPairingCode can run.
+        if (Number(percent) >= 100) {
+          pageReadyResolve?.()
+          pageReadyResolve = null
+        }
       })
 
       // Listen for pairing code (phone number login)
@@ -845,6 +851,12 @@ class WhatsAppWebService {
       client.on('disconnected', async (reason: any) => {
         console.warn(`Disconnected ${sessionId}:`, reason)
         await this.updateDatabaseStatus(sessionId, 'disconnected').catch(() => {})
+      })
+      client.on('change_state', (state: any) => {
+        console.log(`WhatsApp state changed for ${sessionId}:`, state)
+      })
+      client.on('error', (error: any) => {
+        console.error(`WhatsApp client error for ${sessionId}:`, error instanceof Error ? error.message : error)
       })
 
       // Mark creation complete (pendingCreations entry is removed once sessions Map has the entry)

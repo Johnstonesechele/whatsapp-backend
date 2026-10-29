@@ -622,6 +622,10 @@ class WhatsAppWebService {
           await this.updateDatabaseStatus(sessionId, 'ready', fullPhoneNumber || undefined)
           console.log(` Database updated for ${sessionId}: status=ready, phone=${fullPhoneNumber}`)
 
+          // Notify the CRM immediately. Store hydration and welcome messages
+          // can take longer and must not block the user's connected state.
+          await this.notifyFrontendConnection(sessionId, fullPhoneNumber)
+
           // ── CLEAN UP ZOMBIE SESSIONS ─────────────────────────────────────
           // If there are other sessions for this company still initializing/qr_ready,
           // they are orphaned (user connected via this session). Destroy them.
@@ -686,9 +690,6 @@ class WhatsAppWebService {
           } catch (error) {
             console.error(' Failed to send welcome message:', error)
           }
-
-          // Notify frontend about successful connection
-          await this.notifyFrontendConnection(sessionId, fullPhoneNumber)
 
           // Allow ready to fire again on future reconnects for this session
           this.readyProcessed.delete(sessionId)

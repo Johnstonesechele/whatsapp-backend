@@ -118,6 +118,8 @@ class WhatsAppWebService {
   private sessions: Map<string, any> = new Map()
   // Prevents concurrent createSession calls for the same sessionId (race condition guard)
   private pendingCreations: Set<string> = new Set()
+  // Chromium is resource-heavy on Render. Only one browser may initialize at a time.
+  private activeInitializationSessionId: string | null = null
   // Prevents the ready event handler from running multiple times for the same sessionId
   private readyProcessed: Set<string> = new Set()
 
@@ -323,7 +325,19 @@ class WhatsAppWebService {
           status: existingSession?.status || 'initializing'
         }
       }
+      if (this.activeInitializationSessionId && this.activeInitializationSessionId !== sessionId) {
+        console.warn(
+          ` WhatsApp initialization already in progress for ${this.activeInitializationSessionId}; ` +
+          `rejecting concurrent session ${sessionId}`
+        )
+        return {
+          success: false,
+          sessionId,
+          error: 'Another WhatsApp connection is still starting. Please wait and try again.'
+        }
+      }
       this.pendingCreations.add(sessionId)
+      this.activeInitializationSessionId = sessionId
       
       // Get the browser executable path from puppeteer (or system chromium)
       let browserExecutablePath = puppeteer.executablePath()
@@ -359,7 +373,7 @@ class WhatsAppWebService {
           headless: true,
           executablePath: browserExecutablePath,
           timeout: 120000, // 120 second launch timeout (Render cold start)
-          protocolTimeout: 300000, // 5 min protocol timeout
+          protocolTimeout: 600000, // 10 min for slow Render Chromium startup
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -831,12 +845,26 @@ class WhatsAppWebService {
 
       // Initialize the client
       console.log(` Initializing WhatsApp client for session ${sessionId}`)
-      client.initialize().catch((err: any) => {
-        const msg = err && err.message ? err.message : String(err)
-        console.error(`WhatsApp client.initialize failed for ${sessionId}:`, msg)
-        const s = this.sessions.get(sessionId)
-        if (s) { s.status = 'error'; s.error = msg; this.sessions.set(sessionId, s) }
-      })
+      client.initialize()
+        .catch(async (err: any) => {
+          const msg = err && err.message ? err.message : String(err)
+          console.error(`WhatsApp client.initialize failed for ${sessionId}:`, msg)
+          const s = this.sessions.get(sessionId)
+          if (s) { s.status = 'error'; s.error = msg; this.sessions.set(sessionId, s) }
+          try {
+            await client.destroy()
+          } catch (destroyError) {
+            console.warn(`Failed to destroy broken WhatsApp client ${sessionId}:`, destroyError)
+          }
+          this.clients.delete(sessionId)
+          this.sessions.delete(sessionId)
+        })
+        .finally(() => {
+          this.pendingCreations.delete(sessionId)
+          if (this.activeInitializationSessionId === sessionId) {
+            this.activeInitializationSessionId = null
+          }
+        })
       client.on('auth_failure', async (msg: any) => {
         const reason = msg instanceof Error ? msg.message : String(msg)
         console.error(`Auth failure for ${sessionId}:`, reason)
@@ -859,9 +887,6 @@ class WhatsAppWebService {
         console.error(`WhatsApp client error for ${sessionId}:`, error instanceof Error ? error.message : error)
       })
 
-      // Mark creation complete (pendingCreations entry is removed once sessions Map has the entry)
-      this.pendingCreations.delete(sessionId)
-
       return {
         success: true,
         sessionId,
@@ -870,6 +895,9 @@ class WhatsAppWebService {
 
     } catch (error) {
       this.pendingCreations.delete(sessionId)  // always clean up on error
+      if (this.activeInitializationSessionId === sessionId) {
+        this.activeInitializationSessionId = null
+      }
       console.error(`Error creating WhatsApp session ${sessionId}:`, error)
       return {
         success: false,

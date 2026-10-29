@@ -19,6 +19,8 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const resolvedParams = await params
+  const startedAt = Date.now()
+  console.info('[WhatsApp] QR-session poll received', { sessionId: resolvedParams.sessionId })
   try {
     const cookieToken = request.cookies.get("auth_token")?.value
     const authHeader = request.headers.get("authorization")
@@ -41,6 +43,12 @@ export async function GET(
     }
 
     const session = WhatsAppService.getSession(sessionId)
+    console.info('[WhatsApp] QR-session state read', {
+      sessionId,
+      status: session.status,
+      hasQrCode: Boolean(session.qrCode),
+      elapsedMs: Date.now() - startedAt,
+    })
     if (session.status === 'not_found' || session.status === 'unavailable') {
       return NextResponse.json({ error: "Session not found" }, { status: 404 })
     }

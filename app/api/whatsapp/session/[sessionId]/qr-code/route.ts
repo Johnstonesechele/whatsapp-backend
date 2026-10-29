@@ -20,12 +20,14 @@ export async function GET(
 ) {
   const resolvedParams = await params
   try {
+    const cookieToken = request.cookies.get("auth_token")?.value
     const authHeader = request.headers.get("authorization")
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    const headerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+    const token = cookieToken || headerToken
+    if (!token) {
       return NextResponse.json({ error: "No token provided" }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
     const decoded = jwt.verify(token, getJWTSecret()) as any
     const { sessionId } = resolvedParams
 

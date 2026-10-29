@@ -1148,10 +1148,15 @@ class WhatsAppWebService {
       // Wait for the WhatsApp Web page to fully load before requesting pairing code
       // The QR event fires when the page is ready - it resolves the pageReadyPromise
       if (session.pageReadyPromise) {
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('WhatsApp Web page did not load in time. Please try again.')), 90000)
-        )
-        await Promise.race([session.pageReadyPromise, timeoutPromise])
+        let timeoutId: ReturnType<typeof setTimeout> | undefined
+        try {
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('WhatsApp Web page did not load in time. Please try again.')), 90000)
+          })
+          await Promise.race([session.pageReadyPromise, timeoutPromise])
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId)
+        }
       }
 
       // Strip any non-numeric characters from phone number
@@ -1161,13 +1166,21 @@ class WhatsAppWebService {
 
       session.pairingCode = code
       session.status = 'pairing_code_ready'
+      session.error = null
       this.sessions.set(sessionId, session)
 
       return { success: true, code }
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to request pairing code'
+      const session = this.sessions.get(sessionId)
+      if (session) {
+        session.status = 'error'
+        session.error = message
+        this.sessions.set(sessionId, session)
+      }
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to request pairing code'
+        error: message
       }
     }
   }
@@ -1499,7 +1512,8 @@ class WhatsAppWebService {
               phoneNumber: phoneNumber || memSession?.phoneNumber,
               message: 'WhatsApp connected and ready (live probe)',
               connected: true,
-              isConnected: true
+              isConnected: true,
+              pairingCode: memSession?.pairingCode || null
             }
           }
         } catch (probeErr) {
@@ -1581,6 +1595,8 @@ class WhatsAppWebService {
         success: true,
         status: session.status,
         phoneNumber: session.phoneNumber,
+        pairingCode: session.pairingCode || null,
+        error: session.error || null,
         message: (session as any).message,
         connected: session.status === 'ready',
         isConnected: session.status === 'ready'

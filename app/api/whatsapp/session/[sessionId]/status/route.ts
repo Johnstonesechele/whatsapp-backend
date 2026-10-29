@@ -25,7 +25,7 @@ const getWhatsAppService = async () => {
  */
 const MEANINGFUL = new Set([
   'ready', 'authenticated', 'qr_ready', 'initializing',
-  'connecting', 'auth_failed', 'disconnected', 'error'
+  'connecting', 'pairing_code_ready', 'auth_failed', 'disconnected', 'error'
 ])
 
 export async function GET(request: NextRequest, context: SessionParams) {
@@ -135,6 +135,8 @@ export async function GET(request: NextRequest, context: SessionParams) {
             isConnected: isReady,
             phoneNumber: live.phoneNumber || dbPhone,
             sessionId,
+            pairingCode: live.pairingCode || null,
+            error: live.error || null,
             message: isReady ? 'Connected (live)' : `Session ${liveSt}`
           })
         }

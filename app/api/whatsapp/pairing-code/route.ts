@@ -144,24 +144,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // The requestPairingCode method internally waits for the WhatsApp Web page to load
-    // (the QR event signals the page is ready). It waits up to 60 seconds.
+    // Pairing-code generation waits for WhatsApp Web to finish loading; do not
+    // keep this HTTP request open while that background work completes.
     // No need to poll here — just call it directly.
-    const result = await WhatsAppService.requestPairingCode(sessionId, cleanPhoneNumber)
-
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error || 'Failed to generate pairing code' },
-        { status: 500 }
-      )
-    }
+    void WhatsAppService.requestPairingCode(sessionId, cleanPhoneNumber).then(result => {
+      if (!result.success) console.error(`Pairing-code generation failed for ${sessionId}:`, result.error)
+    }).catch(error => {
+      console.error(`Pairing-code generation failed for ${sessionId}:`, error)
+    })
 
     return NextResponse.json({
       success: true,
       sessionId,
-      pairingCode: result.code,
-      message: 'Enter this code on your phone: WhatsApp > Settings > Linked Devices > Link a Device > Link with phone number instead'
-    })
+      status: 'connecting',
+      pairingCode: null,
+      message: 'WhatsApp Web is loading. The pairing code will appear here when it is ready.'
+    }, { status: 202 })
 
   } catch (error) {
     return NextResponse.json(

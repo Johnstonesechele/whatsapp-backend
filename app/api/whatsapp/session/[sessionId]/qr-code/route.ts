@@ -50,7 +50,10 @@ export async function GET(
       sessionId,
       status: session.status,
       qrCode: session.qrCode || null,
-      message: session.status === 'connected' ? 'WhatsApp connected successfully' : 
+      pairingCode: session.pairingCode || null,
+      error: session.error || null,
+      message: session.status === 'ready' || session.status === 'connected' ? 'WhatsApp connected successfully' :
+               session.status === 'error' ? (session.error || 'WhatsApp session failed') :
                session.status === 'connecting' ? 'Scan QR code to connect' : 
                'Session not active'
     })

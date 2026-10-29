@@ -161,7 +161,11 @@ export async function POST(request: NextRequest) {
           code: 'whatsapp_qr_unavailable',
           error: `QR code generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         },
-        { status: 504 }
+        // The session start is already asynchronous. A failure here means the
+        // backend could not start Chromium/session initialization; it is not an
+        // upstream gateway timeout. Return a retryable service error with the
+        // actual cause instead of surfacing a misleading 504.
+        { status: 503 }
       )
     }
     

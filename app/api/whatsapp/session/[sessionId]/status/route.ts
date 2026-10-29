@@ -20,12 +20,12 @@ const getWhatsAppService = async () => {
 
 /**
  * "Meaningful" live statuses — any value outside this set (not_found, unavailable,
- * error, no_session) means the in-process service couldn't answer and we should
+ * no_session) means the in-process service couldn't answer and we should
  * fall through to the next source rather than returning a garbage status.
  */
 const MEANINGFUL = new Set([
   'ready', 'authenticated', 'qr_ready', 'initializing',
-  'connecting', 'auth_failed', 'disconnected'
+  'connecting', 'auth_failed', 'disconnected', 'error'
 ])
 
 export async function GET(request: NextRequest, context: SessionParams) {

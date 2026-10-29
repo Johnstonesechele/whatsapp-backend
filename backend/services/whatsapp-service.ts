@@ -850,14 +850,18 @@ class WhatsAppWebService {
           const msg = err && err.message ? err.message : String(err)
           console.error(`WhatsApp client.initialize failed for ${sessionId}:`, msg)
           const s = this.sessions.get(sessionId)
-          if (s) { s.status = 'error'; s.error = msg; this.sessions.set(sessionId, s) }
+          if (s) {
+            s.status = 'error'
+            s.error = msg
+            this.sessions.set(sessionId, s)
+          }
+          await this.updateDatabaseStatus(sessionId, 'error').catch(() => {})
           try {
             await client.destroy()
           } catch (destroyError) {
             console.warn(`Failed to destroy broken WhatsApp client ${sessionId}:`, destroyError)
           }
           this.clients.delete(sessionId)
-          this.sessions.delete(sessionId)
         })
         .finally(() => {
           this.pendingCreations.delete(sessionId)

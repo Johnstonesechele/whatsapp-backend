@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
 
     // Effective live status — prefer live service status except when it says
     // 'not_found'/'unavailable' (session not in this process's memory).
-    const LIVE_MEANINGFUL = new Set(['ready', 'authenticated', 'qr_ready', 'initializing', 'connecting', 'auth_failed', 'disconnected'])
+    const LIVE_MEANINGFUL = new Set(['ready', 'authenticated', 'qr_ready', 'initializing', 'connecting', 'auth_failed', 'disconnected', 'error'])
     const effectiveStatus: string = LIVE_MEANINGFUL.has(sessionStatus.status)
       ? sessionStatus.status
       : (dbStatus?.connection_status || sessionStatus.status)
